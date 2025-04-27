@@ -1,0 +1,33 @@
+// VerilogA for pq69q, hdl_pmir, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module hdl_pmir(out, vdd, in);
+  input vdd;
+  input in;
+  inout out;
+
+    electrical in, out, vdd;
+
+    parameter real vdsat = 0.5;
+    parameter real gain = 1.0;
+    parameter real inres = 500;
+
+    analog begin
+        if( I(in, vdd) < 0 ) begin
+            if( V(vdd, out) > vdsat ) begin
+                I(out, vdd) <+ gain * I(in,vdd);
+            end else begin
+                I(out, vdd) <+ gain * I(in,vdd) * V(vdd,out)/vdsat;
+            end
+        end // if I > 0
+        else begin
+                I(out,vdd) <+ 0.0;
+        end // else
+
+    V(in,vdd) <+  I(in,vdd)*inres;
+    end // analog
+
+
+endmodule

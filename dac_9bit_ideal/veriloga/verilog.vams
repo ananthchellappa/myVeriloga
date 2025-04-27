@@ -1,0 +1,36 @@
+// VerilogA for PQ91_DCDC, dac_9bit_ideal, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+// Ananth Chellappa 5/30/2011
+
+module dac_9bit_ideal(vout, IN);
+output vout;
+electrical vout;
+input [8:0] IN;
+electrical [8:0] IN;
+
+parameter real vref  = 1 from [0:inf);
+parameter real trise = 0 from [0:inf);
+parameter real tfall = 0 from [0:inf);
+parameter real tdel  = 0 from [0:inf);
+parameter real vtrans  = 2.5;
+
+    real out_scaled; // output scaled as fraction of 512
+
+    analog begin
+		out_scaled = 0;
+		out_scaled = out_scaled + ((V(IN[8]) > vtrans) ? 256 : 0);
+		out_scaled = out_scaled + ((V(IN[7]) > vtrans) ? 128 : 0);
+		out_scaled = out_scaled + ((V(IN[6]) > vtrans) ? 64 : 0);
+		out_scaled = out_scaled + ((V(IN[5]) > vtrans) ? 32 : 0);
+		out_scaled = out_scaled + ((V(IN[4]) > vtrans) ? 16 : 0);
+		out_scaled = out_scaled + ((V(IN[3]) > vtrans) ? 8 : 0);
+		out_scaled = out_scaled + ((V(IN[2]) > vtrans) ? 4 : 0);
+		out_scaled = out_scaled + ((V(IN[1]) > vtrans) ? 2 : 0);
+		out_scaled = out_scaled + ((V(IN[0]) > vtrans) ? 1 : 0);
+		V(vout) <+ transition( vref*out_scaled/512, tdel, trise, tfall );
+    end
+
+endmodule

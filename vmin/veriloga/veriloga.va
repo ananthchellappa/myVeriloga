@@ -1,0 +1,32 @@
+// VerilogA for myVeriloga, vmin, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module vmin(vmin, v1, v2);
+output vmin;
+electrical vmin;
+input v1;
+electrical v1;
+input v2;
+electrical v2;
+
+real vout;
+
+  analog begin
+
+    
+//     @(above( V(v1) - V(v2) ) )
+//       vout = V(v1); 
+//     @(above(-V(v1) + V(v2) ) )
+//       vout = V(v2); 
+
+
+    V(vmin) <+ min(V(v1),V(v2));
+            
+  end 
+
+
+
+
+endmodule

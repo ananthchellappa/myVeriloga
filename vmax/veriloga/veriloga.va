@@ -1,0 +1,17 @@
+// VerilogA for myVeriloga, vmax, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module vmax(vmax, A, B);
+output vmax;
+electrical vmax;
+input A;
+electrical A;
+input B;
+electrical B;
+
+   analog
+      V(vmax) <+ max( V(A), V(B) );
+
+endmodule

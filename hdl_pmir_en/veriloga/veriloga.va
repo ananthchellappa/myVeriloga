@@ -1,0 +1,52 @@
+// VerilogA for myVeriloga, hdl_pmir_en, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module hdl_pmir_en(out, ENB, in, vdd);
+inout out;
+electrical out;
+input ENB;
+electrical ENB;
+input in;
+electrical in;
+input vdd;
+electrical vdd;
+
+parameter real inres = 500 ;
+parameter real gain = 1.0 ;
+parameter real vdsat = 0.5 ;
+parameter real vtrans = 1.5;
+
+real iout;
+real resin;
+
+    analog begin
+        resin = 100e6;
+        if( V(vdd,ENB) > vtrans ) begin
+            if( I(vdd, in) > 0 ) begin
+                resin = inres;
+                if( V(vdd,out) > vdsat ) begin
+                    iout = gain * I(vdd,in);
+                end else begin
+                    iout = gain * I(vdd,in) * V(vdd,out)/vdsat;
+                end
+            end // if I > 0
+
+        end // if V(ENB) ..
+        else begin
+
+// corrected 5/25/2011, was V(out,vdd)
+            iout = V(vdd,out) / 100e6;
+            resin = 100e6;
+
+        end // else
+
+
+
+    V(in,vdd) <+ I(in,vdd)*resin;
+    I(out,vdd) <+ -iout;
+
+    end // analog
+
+endmodule

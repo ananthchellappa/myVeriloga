@@ -1,0 +1,23 @@
+// VerilogA for myVeriloga, sim_stop, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module sim_stop( trig);
+
+  input      trig;
+  electrical trig;
+
+  parameter real vtrans = 1.0;
+
+analog begin
+
+    @ (cross(V(trig) - vtrans, 1))
+    begin
+          $display( "Testbench requested exit\n");
+          $stop( 1 );
+    end
+
+end
+
+endmodule

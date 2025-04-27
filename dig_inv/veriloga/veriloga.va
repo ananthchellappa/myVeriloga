@@ -1,0 +1,78 @@
+// VerilogA for dig_inv
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+//
+//   +--------+---------+-------+----+------------+--------------------------------------------------+
+//   | Name   | Type    | Value |Unit| Range      | Description                                      |
+//   +--------+---------+-------+----+------------+--------------------------------------------------+
+//   | tdel   | real    | 100p  | s  | >=0.0      | Ouput delay
+//   | trise  | real    | 100p  | s  | >=0.0      | Transition operator rise time for output
+//   | tfall  | real    | 100p  | s  | >=0.0      | Transition operator fall time for output
+//   | von    | real    | 1     | V  |            | If V(vcc,gnd)<von, the output is V(gnd)
+//
+//   | Name         | Nature     | Direction  | Description                                          |
+//   +--------------+------------+------------+------------------------------------------------------+
+//   | y            | digital    | output     | Inverter Ouput
+//   | a            | digital    | input      | Inverter Input
+//   | vcc          | electrical | input      | VCC Power Supply Port
+//   | gnd          | electrical | input      | GND Power Supply Port
+//
+// This is a model for a digital inverter with power ports. The output is delayed with respect to 
+// input by 'tdel' seconds. The output in addition takes 'trise' seconds to ramp to V(vcc) and 
+// 'tfall' to ramp to V(gnd), respectively.
+//
+// The threshold voltage is given by:
+//   vth = (V(vcc)+V(gnd))/2
+//
+// When the input voltage crosses the value of 'vth' this is identified as an input event and the 
+// output will change accordingly, given that the supply V(vcc, gnd) is higher than 'von'. If the
+// supply is less than 'von', the output will remain at V(gnd).
+//
+
+module dig_inv(y, a, vcc, gnd);
+  output     y;
+  electrical y;
+  input      a;
+  electrical a;
+  input      vcc;
+  electrical vcc;
+  input      gnd;
+  electrical gnd;
+
+  parameter real tdel  = 100.0p from [0.0:inf); 
+  parameter real trise = 100.0p from [0.0:inf); 
+  parameter real tfall = 100.0p from [0.0:inf); 
+  parameter real von   = 1.0; 
+  parameter real vth = 1.5; 
+
+  real    vhi;
+  real    vlo;
+  integer A; 
+  integer Y; 
+  integer vccON;
+
+  analog begin
+
+    vhi = V(vcc) ; 
+    vlo = V(gnd) ;  
+//     vth = (vhi + vlo) / 2.0 ;  
+
+    @(above( V(vcc, gnd) - von))
+      vccON = 1; 
+    @(above(-V(vcc, gnd) + von))
+      vccON = 0; 
+    
+    @(above( V(a) - vth))
+      A = 1; 
+    @(above(-V(a) + vth))
+      A = 0; 
+
+    Y = !(A) && vccON;
+
+    // Drive Output
+    V(y, gnd) <+ (vhi - vlo) * transition(Y, tdel, trise, tfall);
+            
+  end 
+endmodule

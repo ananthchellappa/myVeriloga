@@ -1,0 +1,69 @@
+// VerilogA for PQ86_AC, hdl_nmir_en, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module hdl_nmir_en(out, EN, gnd, in);
+inout out;
+electrical out;
+input EN;
+electrical EN;
+input gnd;
+electrical gnd;
+input in;
+electrical in;
+
+    parameter real vdsat = 0.5;
+    parameter real gain = 1.0;
+    parameter real vtrans = 1.5;
+    parameter real inres = 500;
+    real iout;
+    real vin;
+    
+
+    analog begin
+
+        if( V(EN) > vtrans ) begin
+            if( I(in, gnd) > 0 ) begin
+                vin = 0.7 + I(in,gnd)*inres;
+                if( V(out, gnd) > vdsat ) begin
+                    iout = gain * I(in,gnd);
+                end else begin
+                    iout = gain * I(in,gnd) * V(out,gnd)/vdsat;
+                end
+            end // if I > 0
+
+        end // if V(EN) ..
+        else begin
+            iout = V(out,gnd) / 100e6;
+            vin =  I(in,gnd)*100e6;
+
+        end // else
+
+
+//         @ (cross(V(EN) - vtrans,  1) )  begin
+// 
+//             if( I(in, gnd) > 0 ) begin
+//                 vin = 0.7 + I(in,gnd)*500;
+//                 if( V(out, gnd) > vdsat ) begin
+//                     iout = gain * I(in,gnd);
+//                 end else begin
+//                     iout = gain * I(in,gnd) * V(out,gnd)/vdsat;
+//                 end
+//             end // if I > 0
+// 
+//         end // @ cross +ve edge
+// 
+//         @ (cross(V(EN) - vtrans, -1) )  begin
+// 
+//             iout = V(out,gnd) / 100e6;
+//             vin =  I(in,gnd)*100e6;
+// 
+//         end // @ cross -ve edge
+
+    V(in,gnd) <+ vin;
+    I(out,gnd) <+ iout;
+
+    end // analog
+
+endmodule

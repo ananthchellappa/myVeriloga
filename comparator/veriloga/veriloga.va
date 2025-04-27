@@ -1,0 +1,48 @@
+// VerilogA for myVeriloga, comparator, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module comparator( in, ref, out) ;
+ input in,ref;
+ output out;
+ electrical in,ref,out;
+ parameter real output_high = 5;
+ parameter real output_low = 0 from (0:output_high);
+ parameter real vhysteresis = 1m from [0:inf);
+ parameter real tdelay = 1n from [0:inf);
+ parameter real ttransit = 10n from [0:inf);
+
+ real vout;
+
+ analog
+   begin
+     if (analysis("static"))
+     begin
+       @(initial_step)
+       begin
+         if (output_high <= output_low)
+         begin
+           $strobe("Range specification error.\n ");
+           $strobe("output_high = (%E) less than output_low = (%E).\n",output_high, output_low );
+           $finish;
+         end
+       end // initial step
+       if ( V(in) >= V(ref) )
+         vout = output_high;
+       else 
+         vout = output_low;
+       V(out) <+ vout;
+     end // if analysis
+     else
+     begin
+       @(cross(V(in)+vhysteresis-V(ref),+1))
+         vout = output_high;
+       @(cross(V(in)-vhysteresis-V(ref),-1))
+         vout = output_low;
+
+       V(out) <+ transition(vout ,tdelay,ttransit);
+     end
+   end
+
+endmodule

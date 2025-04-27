@@ -1,0 +1,36 @@
+// VerilogA for myVeriloga, hdl_soft_nsrc, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module hdl_soft_nsrc(EN, out, gnd);
+
+inout out;
+input gnd, EN;
+electrical out,gnd, EN;
+
+parameter real isink = 1e-6 ;
+parameter real vdsat = 0.5 ;
+parameter real vtrans = 1.5;
+
+real iout;
+
+    analog begin
+
+        if( (V(EN,gnd) > vtrans) && ( V(out,gnd) > 0) )  begin
+                if( V(out, gnd) > vdsat ) begin
+                    iout = isink;
+                end else begin
+                    iout = isink * V(out,gnd)/vdsat;
+                end
+        end // if V(EN) ..
+
+        else begin
+            iout = V(out,gnd) / 100e6;
+        end // else
+
+    I(out,gnd) <+ iout;
+
+    end // analog
+
+endmodule

@@ -1,0 +1,37 @@
+// VerilogA for myVeriloga, hdl_soft_psrc, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module hdl_soft_psrc(out, ENB, vdd);
+inout out;
+input ENB,vdd;
+
+electrical out,ENB,vdd;
+
+parameter real isrc = 1e-6 ;
+parameter real vdsat = 0.5 ;
+parameter real vtrans = 1.5;
+
+real iout;
+
+    analog begin
+
+        if( (V(vdd,ENB) > vtrans) && (V(vdd,out) > 0) ) begin
+            if( V(vdd, out) > vdsat ) begin
+                iout = isrc;
+            end else begin
+                iout = isrc * V(vdd,out)/vdsat;
+            end
+        end // if V(EN) ..
+
+        else begin
+            iout = V(out,vdd) / 100e6;
+        end // else
+
+    I(out,vdd) <+ -iout;
+
+    end // analog
+
+
+endmodule

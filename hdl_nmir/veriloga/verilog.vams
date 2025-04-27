@@ -1,0 +1,34 @@
+// VerilogA for pq69q, hdl_nmir, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+// intended to be a soft current mirror. User is expected to
+// 'q' the instance and set the output saturation voltage -
+// the voltage below which the block will scale the output
+// current linearly. Default is 0.5V
+// current pulled from the "out" terminal can be positive only
+// no restriction is placed on the current that the system
+// forces into the "in" pin
+
+module hdl_nmir ( out, gnd, in );
+
+  input gnd;
+  input in;
+  inout out;
+
+    electrical in, out, gnd;
+
+    parameter real vdsat = 0.5;
+    parameter real gain = 1.0;
+
+    analog begin
+        if( I(in, gnd) > 0 ) begin
+            if( V(out, gnd) > vdsat ) begin
+                I(out, gnd) <+ gain * I(in,gnd);
+            end else begin
+                I(out, gnd) <+ gain * I(in,gnd) * V(out,gnd)/vdsat;
+            end
+        end // if I > 0
+    end // analog
+endmodule

@@ -1,0 +1,89 @@
+// VerilogA for PQ91_AC, osc_trimmer, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module osc_trimmer(B1, B2, B3, B4, B5, B6, B7, B8, C1pF, CODEby64, R10K);
+output B1, B2, B3, B4, B5, B6, B7, B8;
+input C1pF, CODEby64, R10K;
+electrical B1, B2, B3, B4, B5, B6, B7, B8, CODEby64, C1pF, R10K;
+
+parameter real vlogic_low = 3.0 ;
+parameter real vlogic_high = 0.0 ;
+
+real C_untrim;
+real R_untrim;
+real trim_R;
+real weights[1:8];
+real trim[1:8];
+real cor_reqd;
+real correction;
+integer quotient;
+integer i;
+
+    analog begin
+
+      @ ( initial_step ) begin
+        correction = 0;
+        weights[1] = -0.005;
+        weights[2] = -0.009375;
+        weights[3] = -0.01875;
+        weights[4] = -0.0375;
+        weights[5] = -0.075;
+        weights[6] = -0.15;
+        weights[7] = -0.3;
+        weights[8] = 0.56;
+        R_untrim = V(R10K);
+        C_untrim = V(C1pF);     // captured the actual values here
+        cor_reqd = 1e-8/(R_untrim * C_untrim) - 1;
+$strobe( "###################### required correction in RC is : %f\n ", cor_reqd);
+// weights must always be arranged in ascending order of absolute
+// value for this to work
+        if( V(CODEby64) < 0 ) begin     // i.e., let testbench take over otherwise..
+            for( i = 8; i > 0 ; i = i - 1) begin
+                trim_R = R_untrim * (1 + correction + weights[i] );
+$strobe( "###################### trim_R : %f\n ", trim_R);
+                if( ( trim_R/R_untrim - 1) > cor_reqd ) begin    // this bit doesn't
+$strobe( "###################### correction : %f\n ", trim_R/R_untrim-1);
+                                                            // over-correct, so accept
+                    if( cor_reqd <= 0) begin   // only to reject MSB..
+                        if( weights[i] < 0 ) begin
+                            trim[i] = vlogic_high;
+                            correction = correction + weights[i];
+                        end else
+                        begin
+                            trim[i] = vlogic_low;
+                        end
+                    end else    // that is, you need -ve correction, smaller resistor
+                    begin
+                        trim[i] = vlogic_high;
+                        correction = correction + weights[i];
+                    end
+                end else
+                begin
+                    trim[i] = vlogic_low;
+                end
+            end // for
+        end // if V(CODEby..
+        else begin
+            quotient = V(CODEby64) * 64.0;
+            for( i = 1; i < 9 ; i = i + 1) begin
+//                trim[i] = (quotient % 2)? vlogic_high : vlogic_low;
+                trim[i] = (quotient & (1<<(i-1)) )? vlogic_high : vlogic_low;
+            end // for
+        end
+            
+      end   // initial step
+
+      V(B8) <+ trim[8];
+      V(B7) <+ trim[7];
+      V(B6) <+ trim[6];
+      V(B5) <+ trim[5];
+      V(B4) <+ trim[4];
+      V(B3) <+ trim[3];
+      V(B2) <+ trim[2];
+      V(B1) <+ trim[1];
+
+    end // analog
+endmodule
+

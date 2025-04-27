@@ -1,0 +1,112 @@
+// VerilogA for dig_dfrb
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+//
+//   +--------+---------+-------+----+------------+--------------------------------------------------+
+//   | Name   | Type    | Value |Unit| Range      | Description                                      |
+//   +--------+---------+-------+----+------------+--------------------------------------------------+
+//   | tdel   | real    | 100p  | s  | >=0.0      | Ouput delay
+//   | trise  | real    | 100p  | s  | >=0.0      | Transition operator rise time for output
+//   | tfall  | real    | 100p  | s  | >=0.0      | Transition operator fall time for output
+//   | von    | real    | 1     | V  |            | If V(vcc,gnd)<von, the outputs are V(gnd)
+//   | ttol   | real    | 1n    | s  | >0 <=1     | Crossing time tolerance
+//     
+//   +--------------+------------+------------+------------------------------------------------------+
+//   | Name         | Nature     | Direction  | Description                                          |
+//   +--------------+------------+------------+------------------------------------------------------+
+//   | q            | digital    | output     | Latch Ouput
+//   | qb           | digital    | output     | Inverted Latch Ouput
+//   | d            | digital    | input      | Input Data
+//   | ck           | digital    | input      | Clock (rising edge sensitive)
+//   | rb           | digital    | input      | Inverted Reset 
+//   | vcc          | electrical | input      | VCC Power Supply Port
+//   | gnd          | electrical | input      | GND Power Supply Port
+//   +--------------+------------+------------+------------------------------------------------------+
+//
+//
+// This is an Positive-Edge Triggered FlipFlop with Asynchronous Reset. At the clock positive 
+// edge the input D is sampled.
+// 
+// When the 'RB' is low, the Q output is '0', QB is '1'.
+//
+// The threshold voltage is given by:
+//   vth = (V(vcc)+V(gnd))/2
+//
+// When the input voltages cross the value of 'vth' this is identified as an input event and the 
+// output will change accordingly, given that the supply V(vcc, gnd) is higher than 'von'. If the
+// supply is less than 'von', then both Q and QB outputs will remain at V(gnd).
+//
+
+module dig_dfrb(q, qb, d, ck, rb, vcc, gnd);
+  output     q;
+  electrical q;
+  output     qb;
+  electrical qb;
+  input      d;
+  electrical d;
+  input      ck;
+  electrical ck;
+  input      rb;
+  electrical rb;
+  input      vcc;
+  electrical vcc;
+  input      gnd;
+  electrical gnd;
+ 
+  parameter real tdel  = 100.0p from [0.0:inf) ;
+  parameter real trise = 100.0p from [0.0:inf) ;
+  parameter real tfall = 100.0p from [0.0:inf) ;
+  parameter real von   = 1.0; 
+  parameter real ttol  = 1n     from (0.0:1) ;
+
+  real    vhi;
+  real    vlo;
+  integer D; 
+  integer RB; 
+  integer Q; 
+  integer QB; 
+  integer vccON;
+  real    vth; 
+  real    vabstol;
+
+  analog begin
+
+    @(initial_step) 
+      vabstol = 100*vcc.potential.abstol;
+
+    vhi = V(vcc) ; 
+    vlo = V(gnd) ;  
+    vth = (vhi + vlo) / 2.0 ;  
+
+    D = (V(d) >= vth) ? 1 : 0 ;
+
+    @(above(V(vcc, gnd)  - von - vabstol, ttol, vabstol))
+      vccON = 1; 
+    @(above(-V(vcc, gnd) + von - vabstol, ttol, vabstol))
+      vccON = 0; 
+
+    @(above(V(rb)   - vth - vabstol, ttol, vabstol)) 
+      RB = 1; 
+    @(above(-V(rb)  + vth - vabstol, ttol, vabstol)) 
+      RB = 0; 
+
+    @(cross( V(ck) - vth -vabstol, +1, ttol, vabstol)) begin
+      Q = D;
+      QB = !Q;
+    end // @cross on CK
+
+    if (RB == 0) begin
+      Q  = 0;
+      QB = !Q;
+    end
+
+    Q  = Q  && vccON;
+    QB = QB && vccON;
+
+    V(q , gnd) <+ (vhi - vlo) * transition(Q , tdel, trise, tfall);
+    V(qb, gnd) <+ (vhi - vlo) * transition(QB, tdel, trise, tfall);
+
+  end 
+endmodule

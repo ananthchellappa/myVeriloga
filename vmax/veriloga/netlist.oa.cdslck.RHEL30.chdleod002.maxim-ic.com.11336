@@ -1,0 +1,16 @@
+#
+# Edit Lock-Stake file. CAUTION: Please do not change.
+#
+# Information about current Edit Lock Owner.
+#
+LockStakeVersion               1.1
+LoginName                      ananthc
+HostName                       chdleod002.maxim-ic.com
+ProcessIdentifier              11336
+ProcessCreationTime_UTC        1343431544
+ProcessCreationTime_Readable   Fri Jul 27 16:25:44 2012 MST
+AppIdentifier                  OA File System Design Manager
+OSType                         unix
+ReasonForPlacingEditLock       OpenAccess edit lock
+FilePathUsedToEditLock         /home/ananthc/veriloga/IC6/myVeriloga/vmax/veriloga/netlist.oa.cdslck.dirlck
+TimeEditLocked                 Fri Jul 27 16:26:42 2012 MST
