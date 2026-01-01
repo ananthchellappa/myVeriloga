@@ -1,4 +1,3 @@
-//Verilog-AMS HDL for "pq69q", "hdl_nmir" "verilogams"
 
 `include "constants.vams"
 `include "disciplines.vams"
