@@ -1,4 +1,3 @@
-// VerilogA for pq69q, hdl_pmir, veriloga
 
 `include "constants.vams"
 `include "disciplines.vams"
