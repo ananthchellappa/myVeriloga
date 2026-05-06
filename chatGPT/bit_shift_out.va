@@ -1,0 +1,103 @@
+`include "constants.vams"
+`include "disciplines.vams"
+
+module bit_shift_out (
+    input  clk,
+    input  gnd,
+    output d_out
+);
+
+    electrical clk, gnd, d_out;
+
+    parameter real VDD = 1.8;
+
+    parameter integer N_BITS = 8 from [1:31];
+
+    // Examples:
+    //     .DATA(8'hA5)
+    //     .DATA(8'b1010_0101)
+    //     .DATA(165)
+    parameter integer DATA = 8'hA5;
+
+    // 1 = rising edge, 0 = falling edge
+    parameter integer POS_EDGE = 1 from [0:1];
+
+    // 1 = LSB first, 0 = MSB first
+    parameter integer LSB_FIRST = 1 from [0:1];
+
+    // 1 = repeat DATA after N_BITS clocks
+    // 0 = after N_BITS clocks, send zeros forever
+    parameter integer WRAP = 1 from [0:1];
+
+    parameter real VTH_CLK = VDD/2.0;
+
+    parameter real TD = 0.0;
+    parameter real TR = 1p;
+    parameter real TF = 1p;
+
+    integer bit_count;
+    integer bit_index;
+    integer bit_value;
+    integer edge_dir;
+    real dout_v;
+
+    analog begin
+        @(initial_step) begin
+            bit_count = 0;
+            dout_v = 0.0;
+
+            if (POS_EDGE)
+                edge_dir = +1;
+            else
+                edge_dir = -1;
+        end
+
+        @(cross(V(clk, gnd) - VTH_CLK, edge_dir)) begin
+
+            if (bit_count < N_BITS) begin
+
+                if (LSB_FIRST)
+                    bit_index = bit_count;
+                else
+                    bit_index = N_BITS - 1 - bit_count;
+
+                bit_value = (DATA >> bit_index) & 1;
+
+                if (bit_value)
+                    dout_v = VDD;
+                else
+                    dout_v = 0.0;
+
+                bit_count = bit_count + 1;
+
+            end else begin
+
+                // We have already sent N_BITS bits.
+                // Either restart the pattern or send zeros forever.
+                if (WRAP) begin
+                    bit_count = 0;
+
+                    if (LSB_FIRST)
+                        bit_index = bit_count;
+                    else
+                        bit_index = N_BITS - 1 - bit_count;
+
+                    bit_value = (DATA >> bit_index) & 1;
+
+                    if (bit_value)
+                        dout_v = VDD;
+                    else
+                        dout_v = 0.0;
+
+                    bit_count = bit_count + 1;
+
+                end else begin
+                    dout_v = 0.0;
+                end
+            end
+        end
+
+        V(d_out, gnd) <+ transition(dout_v, TD, TR, TF);
+    end
+
+endmodule
