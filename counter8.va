@@ -1,0 +1,61 @@
+`include "constants.vams"
+`include "disciplines.vams"
+
+module counter8 (
+    clk,
+    rst_n,
+    count
+);
+
+    input clk;
+    input rst_n;
+    output [7:0] count;
+
+    electrical clk;
+    electrical rst_n;
+    electrical [7:0] count;
+
+    parameter real VDD  = 1.8;
+    parameter real VTH  = 0.9;
+    parameter real trise = 1n;
+    parameter real tfall = 1n;
+    parameter real tdel  = 1n;
+
+    // Tolerances for cross events.
+    // Keeps the simulator from refining timesteps too aggressively.
+    parameter real TTOL     = 1p;
+    parameter real EXPR_TOL = 1m;
+
+    integer q;
+
+    analog begin
+
+        @(initial_step) begin
+            q = 0;
+        end
+
+        // Asynchronous active-low reset
+        @(cross(V(rst_n) - VTH, -1, TTOL, EXPR_TOL)) begin
+            q = 0;
+        end
+
+        // Rising-edge clock
+        @(cross(V(clk) - VTH, +1, TTOL, EXPR_TOL)) begin
+            if (V(rst_n) > VTH)
+                q = (q + 1) % 256;
+            else
+                q = 0;
+        end
+
+        V(count[0]) <+ transition(((q >> 0) & 1) ? VDD : 0.0, tdel, trise, tfall);
+        V(count[1]) <+ transition(((q >> 1) & 1) ? VDD : 0.0, tdel, trise, tfall);
+        V(count[2]) <+ transition(((q >> 2) & 1) ? VDD : 0.0, tdel, trise, tfall);
+        V(count[3]) <+ transition(((q >> 3) & 1) ? VDD : 0.0, tdel, trise, tfall);
+        V(count[4]) <+ transition(((q >> 4) & 1) ? VDD : 0.0, tdel, trise, tfall);
+        V(count[5]) <+ transition(((q >> 5) & 1) ? VDD : 0.0, tdel, trise, tfall);
+        V(count[6]) <+ transition(((q >> 6) & 1) ? VDD : 0.0, tdel, trise, tfall);
+        V(count[7]) <+ transition(((q >> 7) & 1) ? VDD : 0.0, tdel, trise, tfall);
+
+    end
+
+endmodule
