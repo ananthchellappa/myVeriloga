@@ -1,18 +1,22 @@
 `include "constants.vams"
 `include "disciplines.vams"
 
-module counter8 (
+module counter8_va (
     clk,
     rst_n,
+    init_val,
     count
 );
 
     input clk;
     input rst_n;
+    input [7:0] init_val;
+
     output [7:0] count;
 
     electrical clk;
     electrical rst_n;
+    electrical [7:0] init_val;
     electrical [7:0] count;
 
     parameter real VDD  = 1.8;
@@ -21,30 +25,52 @@ module counter8 (
     parameter real tfall = 1n;
     parameter real tdel  = 1n;
 
-    // Tolerances for cross events.
-    // Keeps the simulator from refining timesteps too aggressively.
+    // Event tolerances for cross().
+    // Avoids forcing very small timesteps.
     parameter real TTOL     = 1p;
     parameter real EXPR_TOL = 1m;
 
     integer q;
+    integer init_int;
 
     analog begin
 
+        // Continuously decode init_val bus into integer form.
+        // This avoids using V(...) inside a function.
+        init_int = 0;
+        if (V(init_val[0]) > VTH) init_int = init_int +   1;
+        if (V(init_val[1]) > VTH) init_int = init_int +   2;
+        if (V(init_val[2]) > VTH) init_int = init_int +   4;
+        if (V(init_val[3]) > VTH) init_int = init_int +   8;
+        if (V(init_val[4]) > VTH) init_int = init_int +  16;
+        if (V(init_val[5]) > VTH) init_int = init_int +  32;
+        if (V(init_val[6]) > VTH) init_int = init_int +  64;
+        if (V(init_val[7]) > VTH) init_int = init_int + 128;
+
         @(initial_step) begin
-            q = 0;
+            if (V(rst_n) > VTH)
+                q = 0;
+            else
+                q = init_int;
         end
 
-        // Asynchronous active-low reset
+        // Asynchronous active-low reset assertion.
         @(cross(V(rst_n) - VTH, -1, TTOL, EXPR_TOL)) begin
-            q = 0;
+            q = init_int;
         end
 
-        // Rising-edge clock
+        // Reset release.
+        // Re-sample init_val here, so counting starts from init_val.
+        @(cross(V(rst_n) - VTH, +1, TTOL, EXPR_TOL)) begin
+            q = init_int;
+        end
+
+        // Rising-edge clock.
         @(cross(V(clk) - VTH, +1, TTOL, EXPR_TOL)) begin
             if (V(rst_n) > VTH)
                 q = (q + 1) % 256;
             else
-                q = 0;
+                q = init_int;
         end
 
         V(count[0]) <+ transition(((q >> 0) & 1) ? VDD : 0.0, tdel, trise, tfall);
